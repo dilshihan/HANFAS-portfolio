@@ -394,17 +394,31 @@ body {
     font-size: 0.8rem;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: color 0.3s;
+    gap: 12px;
+    transition: all 0.3s;
 }
 
-.social-link:hover {
+.developer-credit {
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+    color: #666;
+    letter-spacing: 1px;
+}
+
+.developer-credit a {
     color: var(--gold);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 5px;
+    font-weight: 500;
 }
 
-.social-link i {
-    width: 16px;
-    height: 16px;
+.dev-icon {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2px;
 }
 
 /* Admin Panel */
