@@ -1,93 +1,106 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { supabase } from './supabase.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
     // --- Data Management ---
-    const STORAGE_KEY = 'hanfas_gallery_images';
     let currentPage = 1;
     const itemsPerPage = 10;
+    let cachedImages = [];
     
     const defaultImages = [
-        { id: 1, src: '/images/hero_wedding.png', category: 'Wedding' },
-        { id: 2, src: '/images/wedding_1.png', category: 'Wedding' },
-        { id: 3, src: '/images/wedding_2.png', category: 'Wedding' },
-        { id: 4, src: '/images/hero_model.png', category: 'Model' },
-        { id: 5, src: '/images/model_1.png', category: 'Model' },
-        { id: 6, src: '/images/wedding_3.png', category: 'Wedding' }
+        { id: 'd1', url: '/images/hero_wedding.png', category: 'Wedding' },
+        { id: 'd2', url: '/images/wedding_1.png', category: 'Wedding' },
+        { id: 'd3', url: '/images/wedding_2.png', category: 'Wedding' },
+        { id: 'd4', url: '/images/hero_model.png', category: 'Model' },
+        { id: 'd5', url: '/images/model_1.png', category: 'Model' },
+        { id: 'd6', url: '/images/wedding_3.png', category: 'Wedding' }
     ];
 
-    function getImages() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : defaultImages;
-    }
-
-    function saveImage(image) {
+    async function getImages() {
         try {
-            const images = getImages();
-            images.unshift(image);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-            updateDashboard();
-            renderGalleries();
-            if (document.getElementById('manage-grid')) renderManageGallery();
-            showToast('Image published successfully!');
+            const { data, error } = await supabase
+                .from('images')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            cachedImages = data && data.length > 0 ? data : defaultImages;
+            return cachedImages;
         } catch (e) {
-            console.error('Storage Error:', e);
-            showToast('Upload Failed: Storage limit reached.', true);
+            console.error('Fetch Error:', e);
+            return defaultImages;
         }
     }
 
-    function compressAndSave(file, category) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                
-                // Max dimensions for storage optimization
-                const MAX_WIDTH = 1600;
-                const MAX_HEIGHT = 1600;
+    async function saveImage(file, category) {
+        try {
+            // 1. Upload to Storage
+            const fileName = `${Date.now()}-${file.name}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('gallery')
+                .upload(fileName, file);
 
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
+            if (uploadError) throw uploadError;
 
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+            // 2. Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('gallery')
+                .getPublicUrl(fileName);
 
-                // Compress to JPEG for smaller storage footprint
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                
-                const newImg = {
-                    id: Date.now(),
-                    src: dataUrl,
-                    category: category
-                };
-                saveImage(newImg);
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            // 3. Save to Database
+            const { error: dbError } = await supabase
+                .from('images')
+                .insert([{ url: publicUrl, category: category }]);
+
+            if (dbError) throw dbError;
+
+            showToast('Image published successfully!');
+            await refreshAll();
+            adminNavItems[0].click(); // Back to dashboard
+        } catch (e) {
+            console.error('Upload Error:', e);
+            showToast('Upload Failed: ' + e.message, true);
+        }
     }
 
-    function deleteImage(id) {
-        showDeleteModal(() => {
-            let images = getImages();
-            images = images.filter(img => img.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-            updateDashboard();
-            renderGalleries();
-            renderManageGallery(document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'All');
-            showToast('Image deleted successfully!');
+    async function deleteImage(id, url) {
+        showDeleteModal(async () => {
+            try {
+                // If it's a default image (starts with 'd'), we can't delete it from cloud
+                if (String(id).startsWith('d')) {
+                    showToast('Cannot delete default system images.', true);
+                    return;
+                }
+
+                // 1. Delete from Database
+                const { error: dbError } = await supabase
+                    .from('images')
+                    .delete()
+                    .eq('id', id);
+
+                if (dbError) throw dbError;
+
+                // 2. Try to delete from Storage if it's a Supabase URL
+                if (url.includes('supabase.co')) {
+                    const path = url.split('/').pop();
+                    await supabase.storage.from('gallery').remove([path]);
+                }
+
+                showToast('Image deleted successfully!');
+                await refreshAll();
+            } catch (e) {
+                console.error('Delete Error:', e);
+                showToast('Delete Failed: ' + e.message, true);
+            }
         });
+    }
+
+    async function refreshAll() {
+        await getImages();
+        updateDashboard();
+        renderGalleries();
+        if (document.getElementById('manage-grid')) {
+            renderManageGallery(document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'All');
+        }
     }
 
     // --- UI Notifications & Modals ---
@@ -107,10 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(toast);
         if (window.lucide) window.lucide.createIcons();
 
-        // Trigger animation
         setTimeout(() => toast.classList.add('active'), 10);
-
-        // Remove after 3 seconds
         setTimeout(() => {
             toast.classList.remove('active');
             setTimeout(() => toast.remove(), 500);
@@ -124,11 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!modal || !confirmBtn || !cancelBtn) return;
 
         modal.classList.add('active');
-
         const closeModal = () => modal.classList.remove('active');
 
-        const handleConfirm = () => {
-            onConfirm();
+        const handleConfirm = async () => {
+            await onConfirm();
             closeModal();
             cleanup();
         };
@@ -164,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Admin Side Logic ---
     function updateDashboard() {
-        const images = getImages();
+        const images = cachedImages;
         const total = images.length;
         const weddings = images.filter(img => img.category === 'Wedding').length;
         const models = images.filter(img => img.category === 'Model').length;
@@ -182,9 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminViews = document.querySelectorAll('.admin-view');
 
     if (adminNavItems.length > 0) {
-        updateDashboard();
-        renderManageGallery();
-
         adminNavItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 const viewId = item.getAttribute('data-view');
@@ -202,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Filter functionality for Management
         const filterBtns = document.querySelectorAll('.filter-btn');
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -213,19 +218,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Upload Logic
         const publishBtn = document.querySelector('.publish-btn');
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('fileInput');
-        let selectedImageData = null;
+        let selectedFile = null;
 
         if (dropzone && fileInput) {
             const handleFile = (file) => {
                 if (!file.type.startsWith('image/')) return showToast('Please select an image file.', true);
+                selectedFile = file;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    selectedImageData = e.target.result;
-                    dropzone.innerHTML = `<img src="${selectedImageData}" style="max-height: 100%; max-width: 100%; object-fit: contain;">`;
+                    dropzone.innerHTML = `<img src="${e.target.result}" style="max-height: 100%; max-width: 100%; object-fit: contain;">`;
                     dropzone.style.padding = '10px';
                 };
                 reader.readAsDataURL(file);
@@ -235,24 +239,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (publishBtn) {
-            publishBtn.addEventListener('click', () => {
+            publishBtn.addEventListener('click', async () => {
                 const categorySelect = document.getElementById('category-select');
-                if (!fileInput.files[0] && !selectedImageData) return showToast('Please select an image.', true);
+                if (!selectedFile) return showToast('Please select an image.', true);
                 
-                // If we have a raw file, compress it. Otherwise use the dropzone preview.
-                if (fileInput.files[0]) {
-                    compressAndSave(fileInput.files[0], categorySelect.value);
-                } else if (selectedImageData) {
-                    // Fallback for drag-drop if not using raw file
-                    const newImg = { id: Date.now(), src: selectedImageData, category: categorySelect.value };
-                    saveImage(newImg);
-                }
-
-                selectedImageData = null;
+                publishBtn.disabled = true;
+                publishBtn.textContent = 'Uploading...';
+                
+                await saveImage(selectedFile, categorySelect.value);
+                
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Publish to Gallery';
+                selectedFile = null;
                 fileInput.value = '';
                 dropzone.innerHTML = `<div class="dropzone-content"><i data-lucide="upload-cloud" class="upload-icon"></i><p>Drag & Drop Images or <span>Click to Upload</span></p></div>`;
                 if (window.lucide) window.lucide.createIcons();
-                adminNavItems[0].click(); // Back to dashboard
             });
         }
     }
@@ -263,10 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const controls = document.getElementById('pagination-controls');
         if (!grid || !controls) return;
         
-        let images = getImages();
+        let images = cachedImages;
         if (filter !== 'All') images = images.filter(img => img.category === filter);
 
-        // Pagination Logic
         const totalItems = images.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -279,9 +279,9 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'manage-item';
             item.innerHTML = `
                 <div class="manage-img-container">
-                    <img src="${img.src}" alt="Gallery Image">
+                    <img src="${img.url}" alt="Gallery Image">
                     <div class="delete-overlay">
-                        <button class="delete-btn" data-id="${img.id}">
+                        <button class="delete-btn" data-id="${img.id}" data-url="${img.url}">
                             <i data-lucide="trash-2"></i> Delete
                         </button>
                     </div>
@@ -295,9 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderPagination(totalPages, filter);
 
-        // Add delete event listeners
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', () => deleteImage(Number(btn.getAttribute('data-id'))));
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id');
+                const url = btn.getAttribute('data-url');
+                deleteImage(id, url);
+            });
         });
 
         if (window.lucide) window.lucide.createIcons();
@@ -307,10 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const controls = document.getElementById('pagination-controls');
         if (!controls) return;
         controls.innerHTML = '';
-
         if (totalPages <= 1) return;
 
-        // Prev Button
         const prevBtn = document.createElement('button');
         prevBtn.className = 'page-btn';
         prevBtn.innerHTML = '&laquo; Previous';
@@ -318,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
         prevBtn.onclick = () => { currentPage--; renderManageGallery(filter); gridScrollTop(); };
         controls.appendChild(prevBtn);
 
-        // Page Numbers
         for (let i = 1; i <= totalPages; i++) {
             const pageBtn = document.createElement('button');
             pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
@@ -327,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
             controls.appendChild(pageBtn);
         }
 
-        // Next Button
         const nextBtn = document.createElement('button');
         nextBtn.className = 'page-btn';
         nextBtn.innerHTML = 'Next &raquo;';
@@ -342,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Public Gallery Rendering ---
     function renderGalleries() {
-        const images = getImages();
+        const images = cachedImages;
         const weddingGrid = document.getElementById('wedding-grid');
         const homeWeddingGrid = document.querySelector('#weddings .masonry-grid');
         const modelGallery = document.getElementById('model-gallery');
@@ -351,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const createItem = (img, isWide = false) => {
             const div = document.createElement('div');
             div.className = `masonry-item reveal ${isWide ? 'wide' : ''}`;
-            div.innerHTML = `<img src="${img.src}" alt="Gallery Image">`;
+            div.innerHTML = `<img src="${img.url}" alt="Gallery Image">`;
             return div;
         };
 
@@ -367,10 +366,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (modelGallery) {
             modelGallery.innerHTML = '';
-            images.filter(img => img.category === 'Model').forEach((img, i) => {
+            const modelImages = images.filter(img => img.category === 'Model');
+            modelImages.forEach((img, i) => {
                 const card = document.createElement('div');
                 card.className = `model-card ${i === 0 ? 'active' : ''}`;
-                card.innerHTML = `<img src="${img.src}" alt="Gallery Image">`;
+                card.innerHTML = `<img src="${img.url}" alt="Gallery Image">`;
                 modelGallery.appendChild(card);
             });
             setupModelHover();
@@ -398,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    renderGalleries();
+    // Initial Load
+    await refreshAll();
     if (window.lucide) window.lucide.createIcons();
 });

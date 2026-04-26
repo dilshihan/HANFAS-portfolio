@@ -21,6 +21,12 @@
 
 html {
     scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
 }
 
 body {
@@ -87,18 +93,18 @@ body {
 }
 
 .social-icon {
-    color: var(--gold);
+    color: #fff;
     transition: all 0.3s var(--transition-mid);
     display: flex;
     align-items: center;
 }
 
 .social-icon:hover {
-    color: var(--gold-pale);
+    color: var(--gold);
     transform: translateY(-2px);
 }
 
-.social-icon i, .social-link i {
+.social-icon i, .social-icon svg, .social-link i, .social-link svg {
     width: 20px;
     height: 20px;
     stroke-width: 1.5px;
