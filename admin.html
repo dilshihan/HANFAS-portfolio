@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | ANFAS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        body {
+            background: #f0f0f0 !important;
+            color: #333 !important;
+        }
+
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="admin-panel" class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="admin-logo">ANFAS ADMIN</div>
+            <nav class="admin-nav">
+                <a href="#" class="admin-nav-item active" data-view="overview">Dashboard</a>
+                <a href="#" class="admin-nav-item" data-view="manage">Manage Gallery</a>
+                <a href="#" class="admin-nav-item" data-view="upload">Upload New</a>
+                <a href="/" class="admin-nav-item">Exit to Site</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <!-- Dashboard Overview -->
+            <div id="admin-overview" class="admin-view">
+                <h2 class="admin-title">Quick Stats</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <p class="stat-label">Total Images</p>
+                        <p class="stat-value">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Wedding Collection</p>
+                        <p class="stat-value">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Model Collection</p>
+                        <p class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <ul class="activity-list" id="activity-list">
+                        <li>System initialized.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Manage Gallery Section -->
+            <div id="admin-manage" class="admin-view" style="display: none;">
+                <h2 class="admin-title">Manage Gallery</h2>
+                <div class="manage-filters">
+                    <button class="filter-btn active" data-filter="All">All</button>
+                    <button class="filter-btn" data-filter="Wedding">Weddings</button>
+                    <button class="filter-btn" data-filter="Model">Model</button>
+                </div>
+                <div class="manage-grid" id="manage-grid">
+                    <!-- Images with delete buttons will be injected here -->
+                </div>
+                <div class="pagination" id="pagination-controls">
+                    <!-- Pagination buttons injected here -->
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div id="admin-upload" class="admin-view" style="display: none;">
+                <h2 class="admin-title">Upload Image</h2>
+                <div class="upload-container">
+                    <div class="dropzone" id="dropzone">
+                        <div class="dropzone-content">
+                            <i data-lucide="upload-cloud" class="upload-icon"></i>
+                            <p>Drag & Drop Images or <span>Click to Upload</span></p>
+                        </div>
+                        <input type="file" id="fileInput" hidden>
+                    </div>
+                    <div class="upload-form">
+                        <div class="form-group">
+                            <label>Select Category</label>
+                            <select id="category-select">
+                                <option>Wedding</option>
+                                <option>Model</option>
+                            </select>
+                        </div>
+                        <button class="publish-btn">Publish to Gallery</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="/main.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

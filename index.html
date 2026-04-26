@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANFAS | Luxury Photography</title>
+    <meta name="description" content="High-end luxury wedding and fashion photography. Minimalist, editorial, and cinematic excellence.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">ANFAS</div>
+            <div class="menu">
+                <a href="#weddings" class="nav-link">WEDDINGS</a>
+                <a href="#model" class="nav-link">THE MUSE</a>
+                <a href="/#about" class="nav-link">ABOUT</a>
+            </div>
+            <div class="social-header">
+                <a href="https://instagram.com" class="social-icon"><i data-lucide="instagram"></i></a>
+                <a href="https://x.com" class="social-icon"><i data-lucide="twitter"></i></a>
+            </div>
+        </nav>
+    </header>
+
+    <main id="app">
+        <!-- Landing Page: Split-Screen Hero -->
+        <section id="hero" class="hero-section">
+            <a href="/weddings.html" class="hero-split left">
+                <div class="hero-media" style="background-image: url('/images/hero_wedding.png')"></div>
+                <div class="hero-content">
+                    <h1 class="hero-title">THE <br><span>WEDDINGS</span></h1>
+                    <p class="hero-cta">View Collection</p>
+                </div>
+            </a>
+            <a href="/model.html" class="hero-split right">
+                <div class="hero-media" style="background-image: url('/images/hero_model.png')"></div>
+                <div class="hero-content">
+                    <h1 class="hero-title">THE <br><span>MUSE</span></h1>
+                    <p class="hero-cta">View Portfolio</p>
+                </div>
+            </a>
+        </section>
+
+        <!-- Wedding Gallery (Minimal for home) -->
+        <section id="weddings" class="gallery-section dark-charcoal">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title gold-text">Featured Weddings</h2>
+                    <p class="section-subtitle">Exquisite moments, eternalized.</p>
+                </div>
+                <div class="masonry-grid home-grid">
+                    <div class="masonry-item reveal">
+                        <img src="/images/wedding_1.png" alt="Wedding Candid">
+                    </div>
+                    <div class="masonry-item reveal">
+                        <img src="/images/wedding_2.png" alt="Wedding Ring">
+                    </div>
+                </div>
+                <div class="view-all-container">
+                    <a href="/weddings.html" class="gold-btn">Explore Full Gallery</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Model Gallery (Minimal for home) -->
+        <section id="model" class="gallery-section pure-black">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title gold-text">Selected Muse Works</h2>
+                    <p class="section-subtitle">The intersection of art and fashion.</p>
+                </div>
+                <div class="masonry-grid home-grid">
+                    <div class="masonry-item reveal">
+                        <img src="/images/model_1.png" alt="Model 1">
+                    </div>
+                    <div class="masonry-item wide reveal">
+                        <img src="/images/hero_model.png" alt="Model Hero">
+                    </div>
+                </div>
+                <div class="view-all-container">
+                    <a href="/model.html" class="gold-btn">Full Portfolio</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about-section">
+            <div class="container">
+                <div class="about-content">
+                    <h2 class="section-title gold-text">About Anfas</h2>
+                    <p>Capturing the essence of moments through a luxury editorial lens. Based in the heart of fashion, traveling the world for love.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <div class="logo">ANFAS</div>
+                    <p>&copy; 2026 ANFAS Photography. All Rights Reserved.</p>
+                </div>
+                <div class="footer-socials">
+                    <a href="https://instagram.com" class="social-link"><i data-lucide="instagram"></i> Instagram</a>
+                    <a href="https://linkedin.com" class="social-link"><i data-lucide="linkedin"></i> LinkedIn</a>
+                    <a href="https://facebook.com" class="social-link"><i data-lucide="facebook"></i> Facebook</a>
+                    <a href="https://x.com" class="social-link"><i data-lucide="twitter"></i> X (Twitter)</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/main.js"></script>
+</body>
+</html>
