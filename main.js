@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Data Management ---
-    const STORAGE_KEY = 'anfas_gallery_images';
+    const STORAGE_KEY = 'hanfas_gallery_images';
     let currentPage = 1;
     const itemsPerPage = 10;
     
@@ -19,13 +19,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveImage(image) {
-        const images = getImages();
-        images.unshift(image);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-        updateDashboard();
-        renderGalleries();
-        if (document.getElementById('manage-grid')) renderManageGallery();
-        alert('Image published successfully!');
+        try {
+            const images = getImages();
+            images.unshift(image);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+            updateDashboard();
+            renderGalleries();
+            if (document.getElementById('manage-grid')) renderManageGallery();
+            alert('Image published successfully!');
+        } catch (e) {
+            console.error('Storage Error:', e);
+            alert('Upload Failed: The image is too large for browser storage. I have added automatic compression to help, but please try an even smaller file if this persists.');
+        }
+    }
+
+    function compressAndSave(file, category) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Max dimensions for storage optimization
+                const MAX_WIDTH = 1600;
+                const MAX_HEIGHT = 1600;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compress to JPEG for smaller storage footprint
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                
+                const newImg = {
+                    id: Date.now(),
+                    src: dataUrl,
+                    category: category
+                };
+                saveImage(newImg);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function deleteImage(id) {
@@ -125,15 +175,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (publishBtn) {
             publishBtn.addEventListener('click', () => {
                 const categorySelect = document.getElementById('category-select');
-                if (!selectedImageData) return alert('Please select an image.');
+                if (!fileInput.files[0] && !selectedImageData) return alert('Please select an image.');
                 
-                const newImg = {
-                    id: Date.now(),
-                    src: selectedImageData,
-                    category: categorySelect.value
-                };
-                saveImage(newImg);
+                // If we have a raw file, compress it. Otherwise use the dropzone preview.
+                if (fileInput.files[0]) {
+                    compressAndSave(fileInput.files[0], categorySelect.value);
+                } else if (selectedImageData) {
+                    // Fallback for drag-drop if not using raw file
+                    const newImg = { id: Date.now(), src: selectedImageData, category: categorySelect.value };
+                    saveImage(newImg);
+                }
+
                 selectedImageData = null;
+                fileInput.value = '';
                 dropzone.innerHTML = `<div class="dropzone-content"><i data-lucide="upload-cloud" class="upload-icon"></i><p>Drag & Drop Images or <span>Click to Upload</span></p></div>`;
                 if (window.lucide) window.lucide.createIcons();
                 adminNavItems[0].click(); // Back to dashboard
