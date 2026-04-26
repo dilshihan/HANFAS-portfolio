@@ -87,14 +87,14 @@ body {
 }
 
 .social-icon {
-    color: #fff;
+    color: var(--gold);
     transition: all 0.3s var(--transition-mid);
     display: flex;
     align-items: center;
 }
 
 .social-icon:hover {
-    color: var(--gold);
+    color: var(--gold-pale);
     transform: translateY(-2px);
 }
 

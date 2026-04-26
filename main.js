@@ -399,4 +399,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderGalleries();
+    if (window.lucide) window.lucide.createIcons();
 });
