@@ -26,10 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateDashboard();
             renderGalleries();
             if (document.getElementById('manage-grid')) renderManageGallery();
-            alert('Image published successfully!');
+            showToast('Image published successfully!');
         } catch (e) {
             console.error('Storage Error:', e);
-            alert('Upload Failed: The image is too large for browser storage. I have added automatic compression to help, but please try an even smaller file if this persists.');
+            showToast('Upload Failed: Storage limit reached.', true);
         }
     }
 
@@ -79,13 +79,75 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function deleteImage(id) {
-        if (!confirm('Are you sure you want to delete this image?')) return;
-        let images = getImages();
-        images = images.filter(img => img.id !== id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
-        updateDashboard();
-        renderGalleries();
-        renderManageGallery(document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'All');
+        showDeleteModal(() => {
+            let images = getImages();
+            images = images.filter(img => img.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+            updateDashboard();
+            renderGalleries();
+            renderManageGallery(document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'All');
+            showToast('Image deleted successfully!');
+        });
+    }
+
+    // --- UI Notifications & Modals ---
+    function showToast(message, isError = false) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        if (isError) toast.style.borderLeftColor = '#ef4444';
+        
+        toast.innerHTML = `
+            <i data-lucide="${isError ? 'alert-circle' : 'check-circle'}"></i>
+            <span class="toast-message">${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        if (window.lucide) window.lucide.createIcons();
+
+        // Trigger animation
+        setTimeout(() => toast.classList.add('active'), 10);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('active');
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+
+    function showDeleteModal(onConfirm) {
+        const modal = document.getElementById('delete-modal');
+        const confirmBtn = document.getElementById('confirm-delete');
+        const cancelBtn = document.getElementById('cancel-delete');
+        if (!modal || !confirmBtn || !cancelBtn) return;
+
+        modal.classList.add('active');
+
+        const closeModal = () => modal.classList.remove('active');
+
+        const handleConfirm = () => {
+            onConfirm();
+            closeModal();
+            cleanup();
+        };
+
+        const handleCancel = () => {
+            closeModal();
+            cleanup();
+        };
+
+        const cleanup = () => {
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+        };
+
+        confirmBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) handleCancel();
+        });
     }
 
     // --- Navigation & Header ---
@@ -159,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (dropzone && fileInput) {
             const handleFile = (file) => {
-                if (!file.type.startsWith('image/')) return alert('Please select an image file.');
+                if (!file.type.startsWith('image/')) return showToast('Please select an image file.', true);
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     selectedImageData = e.target.result;
@@ -175,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (publishBtn) {
             publishBtn.addEventListener('click', () => {
                 const categorySelect = document.getElementById('category-select');
-                if (!fileInput.files[0] && !selectedImageData) return alert('Please select an image.');
+                if (!fileInput.files[0] && !selectedImageData) return showToast('Please select an image.', true);
                 
                 // If we have a raw file, compress it. Otherwise use the dropzone preview.
                 if (fileInput.files[0]) {

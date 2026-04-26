@@ -101,6 +101,24 @@
             </div>
         </main>
     </div>
+    
+    <!-- Notifications & Modals -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 class="modal-title">Delete Image?</h3>
+            <p class="modal-text">This action cannot be undone. This image will be permanently removed from your gallery.</p>
+            <div class="modal-actions">
+                <button id="cancel-delete" class="modal-btn modal-btn-cancel">Cancel</button>
+                <button id="confirm-delete" class="modal-btn modal-btn-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="/main.js"></script>
     <script>lucide.createIcons();</script>
 </body>
